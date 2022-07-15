@@ -15,12 +15,6 @@ func (s *Stack[T]) Pop() T {
 func (s *Stack[T]) Length() int {
 	return len(s.items)
 }
-// func (stack *Stack[T]) Print() {
-
-// 	fmt.Printf("[%s]", strings.Join(fmt.Sprintf("%v"), ","))
-// }
-
-
 
 func NewStack[T any] () *Stack[T] {
 	return &Stack[T]{

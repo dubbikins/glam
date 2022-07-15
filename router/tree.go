@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"github.com/dubbikins/glam/logging"
-	"github.com/xlab/treeprint"
 )
 
 type Node struct {
@@ -15,7 +13,6 @@ type Node struct {
 	ParamChild *Node
 	RegexpChildren Children
 	Type NodeType
-	tree treeprint.Tree
 	Middleware []Middleware
 	Handlers map[string]http.Handler
 }
@@ -188,29 +185,4 @@ func Merge(p1 map[string]string, p2 map[string]string) map[string]string {
 		p1[k]= v
 	}
 	return p1
-}
-type Tuple struct {
-	Node *Node
-	Tree treeprint.Tree
-	Path string
-}
-func addChildBranch (parentTuple *Tuple, child *Node, stack *Stack[*Tuple], withColor bool) {
-	path := join(parentTuple.Path, child.Name)
-	if withColor {
-		path = logging.Cyan(path)
-	}
-	branch := parentTuple.Tree.AddBranch(path)
-	nodeType := getNodeType(child.Name)
-	branchName := "type"
-	branchValue := nodeType.ToString()
-	if withColor {
-		branchName = logging.Yellow(branchName)
-		branchValue = logging.Red(branchValue)
-	}
-	branch.AddMetaBranch(branchName, branchValue)
-	stack.Push(&Tuple{
-		Node: child,
-		Tree: branch,
-		Path: path,
-	})
 }
