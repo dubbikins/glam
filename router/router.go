@@ -135,8 +135,8 @@ func (r *Router) Handler(req *http.Request) (http.Handler, *http.Request) {
 func (router *Router) PrintTree() {
 	router.root.PrintTree()
 }
-func (router *Router) String() {
-	router.root.String()
+func (router *Router) String() string {
+	return router.root.String()
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
