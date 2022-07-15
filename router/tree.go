@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"strings"
 	"fmt"
+	"reflect"
+	"runtime"
+	"github.com/dubbikins/glam/logging"
 	"github.com/xlab/treeprint"
 )
 
@@ -189,10 +192,74 @@ func Merge(p1 map[string]string, p2 map[string]string) map[string]string {
 	}
 	return p1
 }
+type Tuple struct {
+	Node *Node
+	Tree treeprint.Tree
+	Path string
+}
+func (n *Node) GetTree() treeprint.Tree {
+	tree := treeprint.New()
+	stack := NewStack[*Tuple]()
+	stack.Push(&Tuple{
+		Node: n,
+		Tree: tree,
+		Path: "",
+	})
+	for stack.Length() > 0 {
+		next := stack.Pop()
+		for method, handler := range next.Node.Handlers {
+			handlerAddr := reflect.ValueOf(handler).Pointer()
+			file, line := runtime.FuncForPC(handlerAddr).FileLine(handlerAddr)
+			next.Tree.AddMetaBranch(logging.Green(fmt.Sprintf("%s handler", method)), logging.Gray(fmt.Sprintf("=> %s:%d", file, line)))
+		}
+		for _,middleware := range next.Node.Middleware {
+			middlewareAddr := reflect.ValueOf(middleware).Pointer()
+			file, line := runtime.FuncForPC(middlewareAddr).FileLine(middlewareAddr)
+			next.Tree.AddMetaBranch(logging.Magenta(fmt.Sprintf("middleware")), logging.Gray(fmt.Sprintf("=> %s:%d", file, line)))
+		}
+		for _, child := range next.Node.Children {
+			path := join(next.Path, child.Name)
+			branch := next.Tree.AddBranch(logging.Cyan(path))
+			nodeType := getNodeType(child.Name)
+			branch.AddMetaBranch(logging.Yellow("type"), logging.Red(nodeType.ToString()))
+			stack.Push(&Tuple{
+				Node: child,
+				Tree: branch,
+				Path: path,
+			})
+		}
+		for _, child := range next.Node.RegexpChildren {
+			path := join(next.Path, child.Name)
+			branch := next.Tree.AddBranch(logging.Cyan(path))
+			nodeType := getNodeType(child.Name)
+			branch.AddMetaBranch(logging.Yellow("type"), logging.Red(nodeType.ToString()))
+			stack.Push(&Tuple{
+				Node: child,
+				Tree: branch,
+				Path: path,
+			})
+		}
+		if child := next.Node.ParamChild; child != nil {
+			path := join(next.Path, child.Name)
+			branch := next.Tree.AddBranch(logging.Cyan(path))
+			nodeType := getNodeType(child.Name)
+			branch.AddMetaBranch(logging.Yellow("type"), logging.Red(nodeType.ToString()))
+			stack.Push(&Tuple{
+				Node: child,
+				Tree: branch,
+				Path: path,
+			})
+		}
+
+		
+	}
+	return tree
+}
 
 func (n *Node) PrintTree() {
-	fmt.Printf(n.tree.String())
+	fmt.Printf(n.String())
 }
 func (n *Node) String() string {
-	return n.tree.String()
+
+	return n.GetTree().String()
 }
