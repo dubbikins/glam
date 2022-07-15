@@ -3,7 +3,10 @@ package router
 import (
 	"fmt"
 	"net/http"
-
+	"github.com/xlab/treeprint"
+	"github.com/dubbikins/glam/logging"
+	"reflect"
+	"runtime"
 )
 
 type UrlParameter struct {
@@ -131,13 +134,55 @@ func (r *Router) Handler(req *http.Request) (http.Handler, *http.Request) {
 	}
 	return h, req
 }
+type TreePrintConfig struct {
+	WithColor bool
+}
+func (router *Router) GetTree(config *TreePrintConfig) treeprint.Tree {
+	tree := treeprint.New()
+	stack := NewStack[*Tuple]()
+	stack.Push(&Tuple{
+		Node: router.root,
+		Tree: tree,
+		Path: "",
+	})
+	for stack.Length() > 0 {
+		next := stack.Pop()
+		for method, handler := range next.Node.Handlers {
+			handlerAddr := reflect.ValueOf(handler).Pointer()
+			file, line := runtime.FuncForPC(handlerAddr).FileLine(handlerAddr)
+			branchName := fmt.Sprintf("%s handler", method)
+			branchValue :=  fmt.Sprintf("=> %s:%d", file, line)
+			if config.WithColor{
+				branchName = logging.Green(branchName)
+				branchValue = logging.Gray(branchValue)
+			}
+			next.Tree.AddMetaBranch(branchName, branchValue)
+		}
+		for _,middleware := range next.Node.Middleware {
+			middlewareAddr := reflect.ValueOf(middleware).Pointer()
+			file, line := runtime.FuncForPC(middlewareAddr).FileLine(middlewareAddr)
+			branchName := fmt.Sprintf("middleware")
+			branchValue :=  fmt.Sprintf("=> %s:%d", file, line)
+			if config.WithColor {
+				branchName = logging.Magenta(branchName)
+				branchValue = logging.Gray(branchValue)
+			}
+			next.Tree.AddMetaBranch(branchName, branchValue)
+		}
+		for _, child := range next.Node.Children {
+			addChildBranch(next, child, stack, config.WithColor)
+		}
+		for _, child := range next.Node.RegexpChildren {
+			addChildBranch(next, child, stack, config.WithColor)
+		}
+		if child := next.Node.ParamChild; child != nil {
+			addChildBranch(next, child, stack, config.WithColor)
+		}
+	}
+	return tree
+}
 
-func (router *Router) PrintTree() {
-	router.root.PrintTree()
-}
-func (router *Router) String() string {
-	return router.root.String()
-}
+
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h, reqWithRouterContext := router.Handler(r)
