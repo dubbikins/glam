@@ -193,3 +193,6 @@ func Merge(p1 map[string]string, p2 map[string]string) map[string]string {
 func (n *Node) PrintTree() {
 	fmt.Printf(n.tree.String())
 }
+func (n *Node) String() string {
+	return n.tree.String()
+}
