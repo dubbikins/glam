@@ -1,5 +1,4 @@
-routers/*
-routers
-controller/*
-controller
-main.go
+cmd
+cmd/*
+.vscode
+.vscode/*
