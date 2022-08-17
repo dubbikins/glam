@@ -35,7 +35,7 @@ func (c *Router) Handle(path, method string, handler http.HandlerFunc) {
 		path = path[1:]
 	}
 	paths := strings.Split(path, "/")
-	c.root.insertHandler(paths, http.MethodGet, handler)
+	c.root.insertHandler(paths, method, handler)
 }
 func (c *Router) Get(path string, handler http.HandlerFunc) {
 	c.Handle(path, http.MethodGet, handler)
