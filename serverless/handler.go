@@ -2,55 +2,43 @@ package serverless
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
-	
-	"github.com/dubbikins/glam/router"
-	"github.com/aws/aws-lambda-go/events"
+
+	"github.com/dubbikins/glam"
 )
 
-type Serverless struct {
-	Router *router.Router
+type Requestable interface {
+	Request() *http.Request
+}
+
+type Serverless[Request Requestable, Response any] struct {
+	Router *glam.Router
 	Domain string
+	Writer http.ResponseWriter
 }
 
-func NewHandler(router *router.Router) *Serverless {
-	return &Serverless{
+func New[Request Requestable, Response any](router *glam.Router, writer http.ResponseWriter) *Serverless[Request, Response] {
+	return &Serverless[Request, Response]{
 		Router: router,
+		Writer: writer,
 	}
 }
 
-func (s *Serverless) Response(event *events.ALBTargetGroupRequest, ctx context.Context) (events.ALBTargetGroupResponse, error) {
-	w := NewResponseWriter(event.MultiValueHeaders != nil).(*ALBStringResponseWriter)
-	r := s.RequestFromALBEvent(event)
-	s.Router.ServeHTTP(w, r)
-
-	return events.ALBTargetGroupResponse{
-		Body: w.Body,
-		StatusCode: w.StatusCode,
-		StatusDescription: w.StatusDescription,
-		IsBase64Encoded: w.IsBase64Encoded,
-		Headers: w.Headers,
-	}, nil
-} 
-
-func (s *Serverless) RequestFromALBEvent(event *events.ALBTargetGroupRequest) *http.Request {
-	path := event.Path
-	if len(event.QueryStringParameters) > 0 {
-		queryStringList := make([]string, len(event.QueryStringParameters))
-		index := 0
-		for key, value := range event.QueryStringParameters {
-			queryStringList[index] = fmt.Sprintf("%s=%s", key, value)
-			index++
-		}
-		queryString := strings.Join(queryStringList, "&")
-		path += "?" + queryString
+// events.ALBTargetGroupResponse
+func (s *Serverless[Request, Response]) Handler() func(ctx context.Context, request Request) (Response, error) {
+	return func(ctx context.Context, request Request) (Response, error) {
+		s.Router.ServeHTTP(s.Writer, request.Request())
+		return s.Writer.(Response), nil
 	}
-	request, err := http.NewRequest(event.HTTPMethod, path, strings.NewReader(event.Body))
-	if err != nil {
-		panic("Error Creating Request from ALB Request Event")
-	}
-	return request
-
 }
+
+/**
+Example: AWS Lambda Handler with ALB Target
+func handler() {
+	router := glam.NewRouter()
+	//...setup router
+	w := aws.NewResponseWriter(false) //true if Multivalue Header
+	server := serverless.New[*aws.ALBTargetGroupRequest, *aws.ALBResponseWriter](router, w)
+	lambda.Start(server.Handler())
+}
+**/

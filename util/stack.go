@@ -1,9 +1,9 @@
-package router
-
+package util
 
 type Stack[T any] struct {
-	items[]T
+	items []T
 }
+
 func (s *Stack[T]) Push(item T) {
 	s.items = append(s.items, item)
 }
@@ -16,9 +16,8 @@ func (s *Stack[T]) Length() int {
 	return len(s.items)
 }
 
-func NewStack[T any] () *Stack[T] {
+func NewStack[T any]() *Stack[T] {
 	return &Stack[T]{
 		items: make([]T, 0),
 	}
 }
-

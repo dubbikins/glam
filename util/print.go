@@ -1,15 +1,17 @@
-package router
+package util
 
 import (
 	"fmt"
-	"github.com/xlab/treeprint"
-	"github.com/dubbikins/glam/logging"
 	"reflect"
 	"runtime"
+
+	"github.com/dubbikins/glam"
+	"github.com/dubbikins/glam/logging"
+	"github.com/xlab/treeprint"
 )
 
 type Tuple struct {
-	Node *Node
+	Node *glam.Node
 	Tree treeprint.Tree
 	Path string
 }
@@ -17,11 +19,12 @@ type Tuple struct {
 type TreeConfig struct {
 	WithColor bool
 }
-func (router *Router) Tree(config *TreeConfig) treeprint.Tree {
+
+func Tree(router *glam.Router, config *TreeConfig) treeprint.Tree {
 	tree := treeprint.New()
 	stack := NewStack[*Tuple]()
 	stack.Push(&Tuple{
-		Node: router.root,
+		Node: router.Root(),
 		Tree: tree,
 		Path: "",
 	})
@@ -31,18 +34,18 @@ func (router *Router) Tree(config *TreeConfig) treeprint.Tree {
 			handlerAddr := reflect.ValueOf(handler).Pointer()
 			file, line := runtime.FuncForPC(handlerAddr).FileLine(handlerAddr)
 			branchName := fmt.Sprintf("%s handler", method)
-			branchValue :=  fmt.Sprintf("=> %s:%d", file, line)
-			if config.WithColor{
+			branchValue := fmt.Sprintf("=> %s:%d", file, line)
+			if config.WithColor {
 				branchName = logging.Green(branchName)
 				branchValue = logging.Gray(branchValue)
 			}
 			next.Tree.AddMetaBranch(branchName, branchValue)
 		}
-		for _,middleware := range next.Node.Middleware {
+		for _, middleware := range next.Node.Middleware {
 			middlewareAddr := reflect.ValueOf(middleware).Pointer()
 			file, line := runtime.FuncForPC(middlewareAddr).FileLine(middlewareAddr)
 			branchName := fmt.Sprintf("middleware")
-			branchValue :=  fmt.Sprintf("=> %s:%d", file, line)
+			branchValue := fmt.Sprintf("=> %s:%d", file, line)
 			if config.WithColor {
 				branchName = logging.Magenta(branchName)
 				branchValue = logging.Gray(branchValue)
@@ -62,13 +65,13 @@ func (router *Router) Tree(config *TreeConfig) treeprint.Tree {
 	return tree
 }
 
-func addChildBranch (parentTuple *Tuple, child *Node, stack *Stack[*Tuple], withColor bool) {
+func addChildBranch(parentTuple *Tuple, child *glam.Node, stack *Stack[*Tuple], withColor bool) {
 	path := child.Name
 	if withColor {
 		path = logging.Cyan(path)
 	}
 	branch := parentTuple.Tree.AddBranch(path)
-	nodeType := getNodeType(child.Name)
+	nodeType := child.Type()
 	branchName := "type"
 	branchValue := nodeType.ToString()
 	if withColor {
