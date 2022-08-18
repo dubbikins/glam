@@ -8,13 +8,14 @@ import (
 )
 
 type Node struct {
-	Name           string                  //16
-	Router         *Router                 //8
-	ParamChild     *Node                   //8
-	Children       Children                //8
-	RegexpChildren Children                //8
-	Handlers       map[string]http.Handler //8
-	Middleware     []Middleware            //24
+	Name            string                  //16
+	Router          *Router                 //8
+	ParamChild      *Node                   //8
+	Children        Children                //8
+	RegexpChildren  Children                //8
+	Handlers        map[string]http.Handler //8
+	Middleware      []Middleware            //24
+	NotFoundHandler http.Handler
 }
 
 type Middleware func(next http.Handler) http.Handler
@@ -55,7 +56,12 @@ func (n *Node) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if prefix == "" && r.URL.Path == "" {
 		handler, found := n.Handlers[r.Method]
 		if !found {
-			handler = n.Router.NotFoundHandler
+			if n.NotFoundHandler != nil {
+				handler = n.NotFoundHandler
+			} else {
+				handler = n.Router.NotFoundHandler
+			}
+
 		}
 		handler.ServeHTTP(w, r)
 	} else {
@@ -83,6 +89,11 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 	if len(path) == 0 {
 		if n.Handlers == nil {
 			n.Handlers = make(map[string]http.Handler)
+		}
+		if method == "NOTFOUND" {
+			n.NotFoundHandler = handler
+		} else if method == "NOTFOUNDAPPLYMIDDLEWARE" {
+			n.NotFoundHandler = n.ApplyMiddleware(handler)
 		}
 		n.Handlers[method] = n.ApplyMiddleware(handler)
 	} else {

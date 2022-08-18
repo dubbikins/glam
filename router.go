@@ -94,6 +94,13 @@ func (router *Router) Router(path string, setRoutes func(r *Router)) {
 func (r *Router) NotFound(handler http.HandlerFunc) {
 	r.NotFoundHandler = handler
 }
+func (r *Router) NotFoundAt(path string, handler http.HandlerFunc, applyMiddleware bool) {
+	method := "NOTFOUND"
+	if applyMiddleware {
+		method = "NOTFOUNDAPPLYMIDDLEWARE"
+	}
+	r.Handle(path, method, handler)
+}
 
 func (parent *Router) Mount(prefix string, r *Router) {
 
