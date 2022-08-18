@@ -2,6 +2,7 @@ package glam
 
 import (
 	"bytes"
+	"fmt"
 
 	"net/http"
 )
@@ -39,7 +40,9 @@ func (n *Node) Type() NodeType {
 	return getNodeType(n.Name)
 }
 func (n *Node) ApplyMiddleware(handler http.Handler) http.Handler {
+
 	if n.Middleware != nil && len(n.Middleware) > 0 {
+		fmt.Println("applying middleware")
 		for i := len(n.Middleware) - 1; i >= 0; i-- {
 			handler = n.Middleware[i](handler)
 		}
@@ -112,21 +115,29 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 }
 
 func (n *Node) insertMiddleware(path []string, middleware []Middleware) {
+	fmt.Println("inserting middleware")
 	if len(path) == 0 {
 		if n.Handlers != nil {
 			panic("cannot insert middleware after handlers")
 		}
+		fmt.Println("adding middleware")
 		n.Middleware = middleware
+		fmt.Println(middleware)
 	} else {
-
+		fmt.Println(path[0])
+		fmt.Println("traversing to add middleware")
 		if n.Type() == Strict {
+			fmt.Println("strict")
 			child, inChidren := n.Children[path[0]]
 			if !inChidren {
+				fmt.Println("no child making")
 				child = NewNode(path[0], n.Router)
 				n.Children[path[0]] = child
 			}
+
 			child.insertMiddleware(path[1:], middleware)
 		} else if n.Type() == Param {
+			fmt.Println("param")
 			if n.ParamChild == nil {
 				n.ParamChild = NewNode(path[0], n.Router)
 				n.ParamChild.insertMiddleware(path[1:], middleware)
@@ -136,6 +147,7 @@ func (n *Node) insertMiddleware(path []string, middleware []Middleware) {
 				panic("Can't have multiple param prefixes assigned to node")
 			}
 		} else {
+			fmt.Println("regex")
 			child, in := n.RegexpChildren[path[0]]
 			if !in {
 				child = NewNode(path[0], n.Router)

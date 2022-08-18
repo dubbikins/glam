@@ -73,32 +73,16 @@ func (c *Router) Trace(path string, handler http.HandlerFunc) {
 	c.Handle(path, http.MethodTrace, handler)
 }
 func (r *Router) Use(middleware ...Middleware) {
-	// for _, mw := range middleware {
-	// 	r.useAt(mw, r.root.Name)
-	// }
-	path := r.root.Name
-	if strings.HasPrefix(path, "/") {
-		path = path[1:]
-	}
-	paths := strings.Split(path, "/")
-	r.root.insertMiddleware(paths, middleware)
+
+	r.root.insertMiddleware([]string{}, middleware)
 }
-func (r *Router) useAt(middleware Middleware, path string) {
+func (r *Router) UseAt(path string, middleware ...Middleware) {
 	path = r.root.Name + path
 	if strings.HasPrefix(path, "/") {
 		path = path[1:]
 	}
 	paths := strings.Split(path, "/")
-	r.root.insertMiddleware(paths, []Middleware{middleware})
-}
-func (r *Router) UseAt(middleware Middleware, paths ...string) {
-	if len(paths) == 0 {
-		r.useAt(middleware, r.root.Name)
-	} else {
-		for _, path := range paths {
-			r.useAt(middleware, r.root.Name+path)
-		}
-	}
+	r.root.insertMiddleware(paths, middleware)
 }
 
 func (router *Router) Router(path string, setRoutes func(r *Router)) {
@@ -111,9 +95,9 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 	r.NotFoundHandler = handler
 }
 
-func (parent *Router) Mount(path string, r *Router) {
+func (parent *Router) Mount(prefix string, r *Router) {
 
-	parent.root.InsertNodeAt(path, r.root)
+	parent.root.InsertNodeAt(prefix, r.root)
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
