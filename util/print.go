@@ -31,7 +31,14 @@ func Tree(router *glam.Router, config *TreeConfig) treeprint.Tree {
 	for stack.Length() > 0 {
 		next := stack.Pop()
 		for method, handler := range next.Node.Handlers {
+
 			handlerAddr := reflect.ValueOf(handler).Pointer()
+			handler, ok := reflect.ValueOf(handler).Interface().(glam.Middleware)
+			if ok {
+				fmt.Println("middleware")
+				fmt.Println(handler)
+			}
+
 			file, line := runtime.FuncForPC(handlerAddr).FileLine(handlerAddr)
 			branchName := fmt.Sprintf("%s handler", method)
 			branchValue := fmt.Sprintf("=> %s:%d", file, line)
@@ -40,6 +47,7 @@ func Tree(router *glam.Router, config *TreeConfig) treeprint.Tree {
 				branchValue = logging.Gray(branchValue)
 			}
 			next.Tree.AddMetaBranch(branchName, branchValue)
+
 		}
 		for _, middleware := range next.Node.Middleware {
 			middlewareAddr := reflect.ValueOf(middleware).Pointer()
