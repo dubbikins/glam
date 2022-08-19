@@ -43,7 +43,7 @@ func (n *Node) Type() NodeType {
 func (n *Node) ApplyMiddleware(handler http.Handler) http.Handler {
 
 	if n.Middleware != nil && len(n.Middleware) > 0 {
-		fmt.Println("applying middleware")
+
 		for i := len(n.Middleware) - 1; i >= 0; i-- {
 			handler = n.Middleware[i](handler)
 		}
@@ -56,28 +56,23 @@ func (n *Node) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if prefix == "" && r.URL.Path == "" {
 		handler, found := n.Handlers[r.Method]
 		if !found {
-			if n.NotFoundHandler != nil {
-				handler = n.NotFoundHandler
-			} else {
-				handler = n.Router.NotFoundHandler
-			}
-
+			handler = n.Router.NotFoundHandler
 		}
-		handler.ServeHTTP(w, r)
+		n.ApplyMiddleware(handler).ServeHTTP(w, r)
 	} else {
 		child, inChildren := n.Children[prefix]
 		if inChildren {
-			child.ServeHTTP(w, r)
+			n.ApplyMiddleware(child).ServeHTTP(w, r)
 
 		} else {
 			for _, child := range n.RegexpChildren {
 				if child.Type().Matches(child.Name, prefix) {
-					child.ServeHTTP(w, requestWithURLParam(r, child.Name, prefix))
+					n.ApplyMiddleware(child).ServeHTTP(w, requestWithURLParam(r, child.Name, prefix))
 					return
 				}
 			}
 			if n.ParamChild != nil && prefix != "" {
-				n.ParamChild.ServeHTTP(w, requestWithURLParam(r, n.ParamChild.Name, prefix))
+				n.ApplyMiddleware(n.ParamChild).ServeHTTP(w, requestWithURLParam(r, n.ParamChild.Name, prefix))
 			} else {
 				n.Router.NotFoundHandler.ServeHTTP(w, r)
 			}
@@ -93,9 +88,9 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 		if method == "NOTFOUND" {
 			n.NotFoundHandler = handler
 		} else if method == "NOTFOUNDAPPLYMIDDLEWARE" {
-			n.NotFoundHandler = n.ApplyMiddleware(handler)
+			n.NotFoundHandler = handler
 		}
-		n.Handlers[method] = n.ApplyMiddleware(handler)
+		n.Handlers[method] = handler
 	} else {
 		nodeType := getNodeType(path[0])
 		if nodeType == Strict {
@@ -104,13 +99,13 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 				child = NewNode(path[0], n.Router)
 				n.Children[path[0]] = child
 			}
-			child.insertHandler(path[1:], method, n.ApplyMiddleware(handler))
+			child.insertHandler(path[1:], method, handler)
 		} else if nodeType == Param {
 			if n.ParamChild == nil {
 				n.ParamChild = NewNode(path[0], n.Router)
-				n.ParamChild.insertHandler(path[1:], method, n.ApplyMiddleware(handler))
+				n.ParamChild.insertHandler(path[1:], method, handler)
 			} else if n.ParamChild.Name == path[0] {
-				n.ParamChild.insertHandler(path[1:], method, n.ApplyMiddleware(handler))
+				n.ParamChild.insertHandler(path[1:], method, handler)
 			} else {
 				panic("Can't have multiple param prefixes assigned to node")
 			}
@@ -120,35 +115,29 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 				child = NewNode(path[0], n.Router)
 				n.RegexpChildren[path[0]] = child
 			}
-			child.insertHandler(path[1:], method, n.ApplyMiddleware(handler))
+			child.insertHandler(path[1:], method, handler)
 		}
 	}
 }
 
 func (n *Node) insertMiddleware(path []string, middleware []Middleware) {
-	fmt.Println("inserting middleware")
 	if len(path) == 0 {
 		if n.Handlers != nil {
 			panic("cannot insert middleware after handlers")
 		}
-		fmt.Println("adding middleware")
 		n.Middleware = middleware
-		fmt.Println(middleware)
 	} else {
 		fmt.Println(path[0])
-		fmt.Println("traversing to add middleware")
 		if n.Type() == Strict {
 			fmt.Println("strict")
 			child, inChidren := n.Children[path[0]]
 			if !inChidren {
-				fmt.Println("no child making")
 				child = NewNode(path[0], n.Router)
 				n.Children[path[0]] = child
 			}
 
 			child.insertMiddleware(path[1:], middleware)
 		} else if n.Type() == Param {
-			fmt.Println("param")
 			if n.ParamChild == nil {
 				n.ParamChild = NewNode(path[0], n.Router)
 				n.ParamChild.insertMiddleware(path[1:], middleware)
@@ -158,7 +147,6 @@ func (n *Node) insertMiddleware(path []string, middleware []Middleware) {
 				panic("Can't have multiple param prefixes assigned to node")
 			}
 		} else {
-			fmt.Println("regex")
 			child, in := n.RegexpChildren[path[0]]
 			if !in {
 				child = NewNode(path[0], n.Router)
