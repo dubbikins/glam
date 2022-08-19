@@ -45,6 +45,7 @@ func (n *Node) ApplyMiddleware(handler http.Handler) http.Handler {
 	if n.Middleware != nil && len(n.Middleware) > 0 {
 
 		for i := len(n.Middleware) - 1; i >= 0; i-- {
+			fmt.Println("Applying middleware")
 			handler = n.Middleware[i](handler)
 		}
 	}
@@ -58,12 +59,16 @@ func (n *Node) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !found {
 			handler = n.Router.NotFoundHandler
 		}
-		n.ApplyMiddleware(handler).ServeHTTP(w, r)
+		if n.Middleware != nil && len(n.Middleware) > 0 {
+			for i := len(n.Middleware) - 1; i >= 0; i-- {
+				handler = n.Middleware[i](handler)
+			}
+		}
+		handler.ServeHTTP(w, r)
 	} else {
 		child, inChildren := n.Children[prefix]
 		if inChildren {
 			n.ApplyMiddleware(child).ServeHTTP(w, r)
-
 		} else {
 			for _, child := range n.RegexpChildren {
 				if child.Type().Matches(child.Name, prefix) {
@@ -73,6 +78,7 @@ func (n *Node) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			if n.ParamChild != nil && prefix != "" {
 				n.ApplyMiddleware(n.ParamChild).ServeHTTP(w, requestWithURLParam(r, n.ParamChild.Name, prefix))
+
 			} else {
 				n.Router.NotFoundHandler.ServeHTTP(w, r)
 			}
@@ -86,8 +92,6 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 			n.Handlers = make(map[string]http.Handler)
 		}
 		if method == "NOTFOUND" {
-			n.NotFoundHandler = handler
-		} else if method == "NOTFOUNDAPPLYMIDDLEWARE" {
 			n.NotFoundHandler = handler
 		}
 		n.Handlers[method] = handler
