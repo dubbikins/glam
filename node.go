@@ -86,7 +86,6 @@ func (n *Node) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (n *Node) insertHandler(path []string, method string, handler http.Handler) {
-
 	if len(path) == 0 {
 		if n.Handlers == nil {
 			n.Handlers = make(map[string]http.Handler)
@@ -126,9 +125,6 @@ func (n *Node) insertHandler(path []string, method string, handler http.Handler)
 
 func (n *Node) insertMiddleware(path []string, middleware []Middleware) {
 	if len(path) == 0 {
-		if n.Handlers != nil {
-			panic("cannot insert middleware after handlers")
-		}
 		n.Middleware = middleware
 	} else {
 		fmt.Println(path[0])
