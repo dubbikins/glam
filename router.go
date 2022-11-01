@@ -1,8 +1,11 @@
 package glam
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/dubbikins/glam/logging"
 )
 
 type UrlParameter struct {
@@ -11,6 +14,7 @@ type UrlParameter struct {
 var defaultNotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 })
+var logger = logging.Logger
 
 type Router struct {
 	root            *Node
@@ -97,14 +101,14 @@ func (r *Router) Use(middleware ...Middleware) {
 
 // UseAt adds 1 or more middleware to a path in the router.
 // The middleware function will be applied to all handlers with a prefix matching this path
-func (r *Router) UseAt(path string, middleware ...Middleware) {
-	path = r.root.Name + path
-	if strings.HasPrefix(path, "/") {
-		path = path[1:]
-	}
-	paths := strings.Split(path, "/")
-	r.root.insertMiddleware(paths, middleware)
-}
+// func (r *Router) UseAt(path string, middleware ...Middleware) {
+// 	path = r.root.Name + path
+// 	if strings.HasPrefix(path, "/") {
+// 		path = path[1:]
+// 	}
+// 	paths := strings.Split(path, "/")
+// 	r.root.insertMiddleware(paths, middleware)
+// }
 
 // Router adds a set of routes to the router at a specified path.
 // This is convinient for paths the share a common prefix reduing the need to specify the entire path for every handler.
@@ -121,13 +125,13 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 
 // NotFoundAt adds a not found handler to a path
 // This allows for multiple NotFound Handlers in the routing tree
-func (r *Router) NotFoundAt(path string, handler http.HandlerFunc, applyMiddleware bool) {
-	method := "NOTFOUND"
-	if applyMiddleware {
-		method = "NOTFOUNDAPPLYMIDDLEWARE"
-	}
-	r.Handle(path, method, handler)
-}
+// func (r *Router) NotFoundAt(path string, handler http.HandlerFunc, applyMiddleware bool) {
+// 	method := "NOTFOUND"
+// 	if applyMiddleware {
+// 		method = "NOTFOUNDAPPLYMIDDLEWARE"
+// 	}
+// 	r.Handle(path, method, handler)
+// }
 
 // Mount converts a top-level router into a top-level node in the parent router with a specified prefix
 func (parent *Router) Mount(prefix string, r *Router) {
@@ -136,5 +140,6 @@ func (parent *Router) Mount(prefix string, r *Router) {
 
 // ServeHTTP is the Router's implementation of the http.Handler interface
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	logger.Info(fmt.Sprintf("%s %s", logging.Green(r.Method), logging.Purple(r.URL.Path)))
 	router.root.ServeHTTP(w, r)
 }
