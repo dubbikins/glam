@@ -45,6 +45,9 @@ func (n NodeType) ToString() string {
 func isWrappedBy(prefix, suffix, pattern string) bool {
 	hasPrefix := strings.HasPrefix(pattern, prefix)
 	hasSuffix := strings.HasSuffix(pattern, suffix)
+	if len(pattern) < 2 {
+		panic(fmt.Sprintf("Route param is missing is invalid length"))
+	}
 	if hasPrefix && !hasSuffix {
 		panic(fmt.Sprintf("Route param is missing '%s'", suffix))
 	} else if !hasPrefix && hasSuffix {
