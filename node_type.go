@@ -59,7 +59,7 @@ func isWrappedBy(prefix, suffix, pattern string) bool {
 func getNodeType(prefix string) NodeType {
 	if isWrappedBy("{", "}", prefix) {
 		return Param
-	} else if isWrappedBy("`", "`", prefix) {
+	} else if isWrappedBy("(", ")", prefix) {
 		return Regexp
 	} else {
 		return Strict

@@ -10,29 +10,29 @@ import (
 const GlamContextKey context.ContextKey = "_!_glam_router_!_"
 
 type glamContext struct {
-	URLParams map[string]string
+	Params map[string]string
 }
 
 func newGlamContext() *glamContext {
 	return &glamContext{
-		URLParams: make(map[string]string),
+		Params: make(map[string]string),
 	}
 }
 
-func GetURLParam(r *http.Request, key string) (string, bool) {
+func GetParam(r *http.Request, key string) (string, bool) {
 	ctx := context.NewContext[*glamContext](r, GlamContextKey)
 	gctx, ok := ctx.Get()
 	if ok {
-		value, in := gctx.URLParams[fmt.Sprintf("{%s}", key)]
+		value, in := gctx.Params[fmt.Sprintf("{%s}", key)]
 		return value, in
 	}
 	return "", false
 }
-func GetRegexURLParam(r *http.Request, key string) (string, bool) {
+func GetRegexParam(r *http.Request, key string) (string, bool) {
 	ctx := context.NewContext[*glamContext](r, GlamContextKey)
 	gctx, ok := ctx.Get()
 	if ok {
-		value, in := gctx.URLParams[fmt.Sprintf("`%s`", key)]
+		value, in := gctx.Params[fmt.Sprintf("(%s)", key)]
 		return value, in
 	}
 	return "", false
@@ -53,6 +53,6 @@ func requestWithURLParam(r *http.Request, key, value string) *http.Request {
 		gctx = newGlamContext()
 	}
 
-	gctx.URLParams[key] = value
+	gctx.Params[key] = value
 	return ctx.Update(r, gctx)
 }
