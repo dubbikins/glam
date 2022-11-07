@@ -10,7 +10,7 @@ import (
 func GetRouter() *Router {
 	r := NewRouter()
 	r.Get("/posts/{test}", func(w http.ResponseWriter, r *http.Request) {
-		test, _ := GetURLParam(r, "test")
+		test, _ := GetParam(r, "test")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(test))
 	})
@@ -46,7 +46,7 @@ func BenchmarkGetRouter(b *testing.B) {
 		for p.Next() {
 			r := NewRouter()
 			r.Get("/posts/{test}", func(w http.ResponseWriter, r *http.Request) {
-				test, _ := GetURLParam(r, "test")
+				test, _ := GetParam(r, "test")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(test))
 			})
@@ -63,7 +63,7 @@ func BenchmarkHandleGetWithParam(b *testing.B) {
 		b.ResetTimer()
 		for p.Next() {
 			r.Get("/posts/{test}", func(w http.ResponseWriter, r *http.Request) {
-				test, _ := GetURLParam(r, "test")
+				test, _ := GetParam(r, "test")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(test))
 			})
@@ -681,7 +681,7 @@ func TestRoutesParam(t *testing.T) {
 	expected_body := "routes_id"
 	router.Routes("{id}", func(r *Router) {
 		r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
-			id, _ := GetURLParam(r, "id")
+			id, _ := GetParam(r, "id")
 			w.Write([]byte(id + "_id"))
 			w.WriteHeader(expected.StatusCode)
 		})
@@ -742,7 +742,7 @@ func TestGetURLParamWhenNotSet(t *testing.T) {
 		StatusCode: http.StatusOK,
 	}
 	router.Get("/test/{id}", func(w http.ResponseWriter, r *http.Request) {
-		name, found := GetURLParam(r, "name")
+		name, found := GetParam(r, "name")
 		w.WriteHeader(expected.StatusCode)
 		if name != "" || found == true {
 			t.Fatal("URL Param should return false when param not set")
@@ -764,7 +764,7 @@ func TestGetURLParamWhenSet(t *testing.T) {
 		StatusCode: http.StatusOK,
 	}
 	router.Get("/test/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id, found := GetURLParam(r, "id")
+		id, found := GetParam(r, "id")
 		w.WriteHeader(expected.StatusCode)
 		if id != "123" || found == false {
 			t.Fatal("URL Param should return false when param not set")
@@ -776,9 +776,31 @@ func TestGetURLParamWhenSet(t *testing.T) {
 
 func TestGetURLParamWhenNoContextSet(t *testing.T) {
 	r, _ := http.NewRequest(http.MethodGet, "/test/123", nil)
-	id, found := GetURLParam(r, "id")
+	id, found := GetParam(r, "id")
 	if id != "" || found == true {
 		t.Fatal("URL Param should return false when param not set")
 	}
+
+}
+
+func TestGetRegexParam(t *testing.T) {
+	router := NewRouter()
+	r, err := http.NewRequest(http.MethodGet, "/test/123", nil)
+	if err != nil {
+		t.Fail()
+	}
+	w := httptest.NewRecorder()
+
+	router.Get("/test/(.)", func(w http.ResponseWriter, r *http.Request) {
+		param, found := GetRegexParam(r, ".")
+		if !found {
+			gctx := GetGlamContext(r)
+			t.Fatalf("regex param not found in %s", gctx)
+		}
+		if param != "123" {
+			t.Fail()
+		}
+	})
+	router.ServeHTTP(w, r)
 
 }
