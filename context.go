@@ -28,6 +28,15 @@ func GetURLParam(r *http.Request, key string) (string, bool) {
 	}
 	return "", false
 }
+func GetRegexURLParam(r *http.Request, key string) (string, bool) {
+	ctx := context.NewContext[*glamContext](r, GlamContextKey)
+	gctx, ok := ctx.Get()
+	if ok {
+		value, in := gctx.URLParams[fmt.Sprintf("`%s`", key)]
+		return value, in
+	}
+	return "", false
+}
 func GetGlamContext(r *http.Request) *glamContext {
 	ctx := context.NewContext[*glamContext](r, GlamContextKey)
 	gctx, ok := ctx.Get()
