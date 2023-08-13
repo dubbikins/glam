@@ -2,64 +2,81 @@ package glam
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 )
 
-type NodeType uint8
+type nodeType uint8
 
 const (
-	Strict NodeType = iota
+	Strict nodeType = iota
 	Param
 	Regexp
+	Static
+	None
 )
 
-func (n NodeType) IsParam() bool {
-	return n == Param || n == Regexp
+func getRegexKeyIndices(key string) (start, sepIndex int) {
+	if len(key) < 2 {
+		panic("invalid pattern definition: invalid length")
+	}
+	start = 1
+	sepIndex = strings.IndexRune(key, ':')
+	if sepIndex == -1 {
+		panic("invalid regular expression pattern definition")
+	}
+	return
 }
 
-func (n NodeType) Matches(pattern, value string) bool {
-	if n == Param && value != "" {
-		return true
-	} else if n == Regexp {
-		pattern = pattern[1 : len(pattern)-1]
-		r, _ := regexp.Compile(pattern)
-		return r.MatchString(value)
+func (n nodeType) ToString() string {
+	switch n {
+	case Strict:
+		return "Strict"
+	case Param:
+		return "Param"
+	case Regexp:
+		return "Regexp"
+	case Static:
+		return "Static"
+	case None:
+		return "None"
 	}
-	return false
-}
-
-func (n NodeType) ToString() string {
-
-	var nodeType string
-	if n == Strict {
-		nodeType = "Strict"
-	} else if n == Param {
-		nodeType = "Param"
-	} else if n == Regexp {
-		nodeType = "Regexp"
-	}
-	return nodeType
+	return ""
 }
 
 func isWrappedBy(prefix, suffix, pattern string) bool {
 	hasPrefix := strings.HasPrefix(pattern, prefix)
 	hasSuffix := strings.HasSuffix(pattern, suffix)
 	if len(pattern) < 2 {
-		panic(fmt.Sprintf("Route param is missing is invalid length"))
+		return false
 	}
-	if hasPrefix && !hasSuffix {
-		panic(fmt.Sprintf("Route param is missing '%s'", suffix))
-	} else if !hasPrefix && hasSuffix {
-		panic(fmt.Sprintf("Route param is missing '%s'", prefix))
+	if (hasPrefix && !hasSuffix) || (!hasPrefix && hasSuffix) {
+		panic("Invalid param/regex pattern definition")
 	}
 	return hasPrefix && hasSuffix
 }
 
-func getNodeType(prefix string) NodeType {
-	if isWrappedBy("{", "}", prefix) {
+func getNodeType(name string) nodeType {
+
+	if strings.HasSuffix(name, "~") {
+		return Static
+	} else if isWrappedBy("{", "}", name) {
 		return Param
-	} else if isWrappedBy("(", ")", prefix) {
+	} else if isWrappedBy("(", ")", name) {
+		return Regexp
+	} else {
+		return Strict
+	}
+}
+func getNextNodeType(path []string) nodeType {
+	if len(path) == 0 {
+		return None
+	}
+	if strings.HasSuffix(path[0], "~") {
+		fmt.Println("static")
+		return Static
+	} else if isWrappedBy("{", "}", path[0]) {
+		return Param
+	} else if isWrappedBy("(", ")", path[0]) {
 		return Regexp
 	} else {
 		return Strict

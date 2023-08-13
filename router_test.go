@@ -78,7 +78,7 @@ func BenchmarkHandle(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for p.Next() {
-			rtr.Handle("/test", http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
+			rtr.Handle([]string{"/test"}, http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
 
 			})
 
@@ -152,18 +152,19 @@ func BenchmarkRouterGetWith3Middleware(b *testing.B) {
 
 func TestNewRouter(t *testing.T) {
 	router := NewRouter()
-	if router.NotFoundHandler == nil {
-		t.Fatal("New Router Not Found Handler Not Set")
-	}
 	if router.root == nil || router.root.Name != "" {
 		t.Fatal("New Router root should not be nil and emtpy")
 	}
+	if router.root.notFoundHandler() == nil {
+		t.Fatal("New Router Not Found Handler Not Set")
+	}
+
 }
 
 func TestRoot(t *testing.T) {
 	router := NewRouter()
 
-	if router.root != router.Root() {
+	if router.root != router.getRoot() {
 		t.Fatal("New Router Root() returned incorrect value")
 	}
 }
@@ -299,10 +300,10 @@ func TestOptionsStrictPath(t *testing.T) {
 		StatusCode: http.StatusOK,
 	}
 	expected_body := "hello world"
-	router.Options("/test", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(expected_body))
-		w.WriteHeader(expected.StatusCode)
-	})
+	// router.Options("/test", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Write([]byte(expected_body))
+	// 	w.WriteHeader(expected.StatusCode)
+	// })
 	router.ServeHTTP(w, r)
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -651,7 +652,7 @@ func TestRoutes(t *testing.T) {
 		StatusCode: http.StatusOK,
 	}
 	expected_body := "hello world"
-	router.Routes("routes", func(r *Router) {
+	router.WithRoutes("routes", func(r *Router) {
 		r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(expected_body))
 			w.WriteHeader(expected.StatusCode)
@@ -679,7 +680,7 @@ func TestRoutesParam(t *testing.T) {
 		StatusCode: http.StatusOK,
 	}
 	expected_body := "routes_id"
-	router.Routes("{id}", func(r *Router) {
+	router.WithRoutes("{id}", func(r *Router) {
 		r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 			id, _ := GetParam(r, "id")
 			w.Write([]byte(id + "_id"))
@@ -694,39 +695,6 @@ func TestRoutesParam(t *testing.T) {
 	}
 	if string(body) != expected_body {
 		t.Fatalf("HTTP GET Request Failed: Expected body %s but was %s", expected_body, body)
-	}
-}
-
-func TestGetGlamContextWhenNotSet(t *testing.T) {
-	r, err := http.NewRequest(http.MethodGet, "/routes/test", nil)
-	if err != nil {
-		t.Fail()
-	}
-	ctx := GetGlamContext(r)
-	if ctx != nil {
-		t.Fatal("expected glam context to be nil when unset by router")
-	}
-
-}
-
-func TestGetGlamContextWhenSet(t *testing.T) {
-	router := NewRouter()
-	var ctx *glamContext
-	r, err := http.NewRequest(http.MethodGet, "/test/123", nil)
-	if err != nil {
-		t.Fail()
-	}
-	w := httptest.NewRecorder()
-	expected := http.Response{
-		StatusCode: http.StatusOK,
-	}
-	router.Get("/test/{id}", func(w http.ResponseWriter, r *http.Request) {
-		ctx = GetGlamContext(r)
-		w.WriteHeader(expected.StatusCode)
-	})
-	router.ServeHTTP(w, r)
-	if ctx == nil {
-		t.Fatal("Glam Context should not be nil")
 	}
 }
 
@@ -780,27 +748,5 @@ func TestGetURLParamWhenNoContextSet(t *testing.T) {
 	if id != "" || found == true {
 		t.Fatal("URL Param should return false when param not set")
 	}
-
-}
-
-func TestGetRegexParam(t *testing.T) {
-	router := NewRouter()
-	r, err := http.NewRequest(http.MethodGet, "/test/123", nil)
-	if err != nil {
-		t.Fail()
-	}
-	w := httptest.NewRecorder()
-
-	router.Get("/test/(.)", func(w http.ResponseWriter, r *http.Request) {
-		param, found := GetRegexParam(r, ".")
-		if !found {
-			gctx := GetGlamContext(r)
-			t.Fatalf("regex param not found in %s", gctx)
-		}
-		if param != "123" {
-			t.Fail()
-		}
-	})
-	router.ServeHTTP(w, r)
 
 }

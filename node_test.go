@@ -7,7 +7,7 @@ import (
 
 func BenchmarkApplyMiddleware(b *testing.B) {
 	router := NewRouter()
-	node := NewNode("test", router)
+	node := newNode("test", router.root)
 	mw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			next.ServeHTTP(w, r)
@@ -21,7 +21,7 @@ func BenchmarkApplyMiddleware(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for pb.Next() {
-			node.ApplyMiddleware(handler)
+			node.applyMiddleware(handler)
 		}
 	})
 }

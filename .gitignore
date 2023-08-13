@@ -2,3 +2,4 @@ cmd
 cmd/*
 .vscode
 .vscode/*
+*.coverprofile

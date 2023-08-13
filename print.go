@@ -1,43 +1,58 @@
-package util
+package glam
 
 import (
 	"fmt"
 	"reflect"
 	"runtime"
 
-	"github.com/dubbikins/glam"
 	"github.com/dubbikins/glam/logging"
+	"github.com/dubbikins/glam/util"
 	"github.com/xlab/treeprint"
 )
 
 type Tuple struct {
-	Node *glam.Node
+	Node *node
 	Tree treeprint.Tree
 	Path string
 }
 
 type TreeConfig struct {
 	WithColor bool
+	WithDepth bool
 }
 
-func Tree(router *glam.Router, config *TreeConfig) treeprint.Tree {
+func (router *Router) Tree(optsFunc ...func(config *TreeConfig)) treeprint.Tree {
+	config := &TreeConfig{}
+	for _, f := range optsFunc {
+		f(config)
+	}
 	tree := treeprint.New()
-	stack := NewStack[*Tuple]()
+	stack := util.NewStack[*Tuple]()
 	stack.Push(&Tuple{
-		Node: router.Root(),
+		Node: router.getRoot(),
 		Tree: tree,
 		Path: "",
 	})
 	for stack.Length() > 0 {
 		next := stack.Pop()
+		if config.WithDepth {
+			next.Tree.AddMetaBranch("Depth", fmt.Sprintf("%d", next.Node.depth()))
+		}
+		if next.Node.NotFound != nil {
+			nfhandlerAddr := reflect.ValueOf(next.Node.notFoundHandler()).Pointer()
+			file, line := runtime.FuncForPC(nfhandlerAddr).FileLine(nfhandlerAddr)
+			branchName := fmt.Sprintf("NOT_FOUND Handler")
+			branchValue := fmt.Sprintf("=> %s:%d", file, line)
+			if config.WithColor {
+				branchName = logging.Green(branchName)
+				branchValue = logging.Gray(branchValue)
+			}
+			next.Tree.AddMetaBranch(branchName, branchValue)
+		}
+
 		for method, handler := range next.Node.Handlers {
 
 			handlerAddr := reflect.ValueOf(handler).Pointer()
-			handler, ok := reflect.ValueOf(handler).Interface().(glam.Middleware)
-			if ok {
-				fmt.Println("middleware")
-				fmt.Println(handler)
-			}
 
 			file, line := runtime.FuncForPC(handlerAddr).FileLine(handlerAddr)
 			branchName := fmt.Sprintf("%s handler", method)
@@ -60,7 +75,13 @@ func Tree(router *glam.Router, config *TreeConfig) treeprint.Tree {
 			}
 			next.Tree.AddMetaBranch(branchName, branchValue)
 		}
+
 		for _, child := range next.Node.Children {
+
+			addChildBranch(next, child, stack, config.WithColor)
+		}
+		for _, child := range next.Node.StaticChildren {
+
 			addChildBranch(next, child, stack, config.WithColor)
 		}
 		for _, child := range next.Node.RegexpChildren {
@@ -73,7 +94,7 @@ func Tree(router *glam.Router, config *TreeConfig) treeprint.Tree {
 	return tree
 }
 
-func addChildBranch(parentTuple *Tuple, child *glam.Node, stack *Stack[*Tuple], withColor bool) {
+func addChildBranch(parentTuple *Tuple, child *node, stack *util.Stack[*Tuple], withColor bool) {
 	path := child.Name
 	if withColor {
 		path = logging.Cyan(path)
