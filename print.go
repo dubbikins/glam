@@ -11,7 +11,7 @@ import (
 )
 
 type Tuple struct {
-	Node *node
+	Node *Router
 	Tree treeprint.Tree
 	Path string
 }
@@ -29,7 +29,7 @@ func (router *Router) Tree(optsFunc ...func(config *TreeConfig)) treeprint.Tree 
 	tree := treeprint.New()
 	stack := util.NewStack[*Tuple]()
 	stack.Push(&Tuple{
-		Node: router.getRoot(),
+		Node: router,
 		Tree: tree,
 		Path: "",
 	})
@@ -38,7 +38,7 @@ func (router *Router) Tree(optsFunc ...func(config *TreeConfig)) treeprint.Tree 
 		if config.WithDepth {
 			next.Tree.AddMetaBranch("Depth", fmt.Sprintf("%d", next.Node.depth()))
 		}
-		if next.Node.NotFound != nil {
+		if next.Node.notFound != nil {
 			nfhandlerAddr := reflect.ValueOf(next.Node.notFoundHandler()).Pointer()
 			file, line := runtime.FuncForPC(nfhandlerAddr).FileLine(nfhandlerAddr)
 			branchName := fmt.Sprintf("NOT_FOUND Handler")
@@ -94,12 +94,12 @@ func (router *Router) Tree(optsFunc ...func(config *TreeConfig)) treeprint.Tree 
 	return tree
 }
 
-func addChildBranch(parentTuple *Tuple, child *node, stack *util.Stack[*Tuple], withColor bool) {
+func addChildBranch(parentTuple *Tuple, child *Router, stack *util.Stack[*Tuple], withColor bool) {
 	path := child.Name
 	if withColor {
 		path = logging.Cyan(path)
 	}
-	branch := parentTuple.Tree.AddBranch(path)
+	branch := parentTuple.Tree.AddBranch("/" + path)
 	nodeType := child.Type()
 	branchName := "type"
 	branchValue := nodeType.ToString()

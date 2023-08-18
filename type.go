@@ -1,9 +1,14 @@
 package glam
 
 import (
-	"fmt"
 	"strings"
 )
+
+const StaticIdentifier string = "*"
+const ParamPrefix string = "{"
+const ParamSuffix string = "}"
+const RegexpPrefix string = "("
+const RegexpSuffix string = ")"
 
 type nodeType uint8
 
@@ -57,11 +62,11 @@ func isWrappedBy(prefix, suffix, pattern string) bool {
 
 func getNodeType(name string) nodeType {
 
-	if strings.HasSuffix(name, "~") {
+	if strings.HasSuffix(name, StaticIdentifier) {
 		return Static
-	} else if isWrappedBy("{", "}", name) {
+	} else if isWrappedBy(ParamPrefix, ParamSuffix, name) {
 		return Param
-	} else if isWrappedBy("(", ")", name) {
+	} else if isWrappedBy(RegexpPrefix, RegexpSuffix, name) {
 		return Regexp
 	} else {
 		return Strict
@@ -71,14 +76,5 @@ func getNextNodeType(path []string) nodeType {
 	if len(path) == 0 {
 		return None
 	}
-	if strings.HasSuffix(path[0], "~") {
-		fmt.Println("static")
-		return Static
-	} else if isWrappedBy("{", "}", path[0]) {
-		return Param
-	} else if isWrappedBy("(", ")", path[0]) {
-		return Regexp
-	} else {
-		return Strict
-	}
+	return getNodeType(path[0])
 }

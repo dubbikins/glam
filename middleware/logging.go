@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"bufio"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/dubbikins/glam/logging"
@@ -10,6 +12,10 @@ import (
 type StatusRecorder struct {
 	http.ResponseWriter
 	Status int
+}
+
+func (recorder *StatusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return recorder.ResponseWriter.(http.Hijacker).Hijack()
 }
 
 func (r *StatusRecorder) WriteHeader(status int) {
