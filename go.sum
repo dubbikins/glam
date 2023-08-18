@@ -1,3 +1,5 @@
+github.com/aws/aws-lambda-go v1.41.0 h1:l/5fyVb6Ud9uYd411xdHZzSf2n86TakxzpvIoz7l+3Y=
+github.com/aws/aws-lambda-go v1.41.0/go.mod h1:jwFe2KmMsHmffA1X2R09hH6lFzJQxzI8qK17ewzbQMM=
 github.com/aws/aws-sdk-go-v2 v1.20.1 h1:rZBf5DWr7YGrnlTK4kgDQGn1ltqOg5orCYb/UhOFZkg=
 github.com/aws/aws-sdk-go-v2 v1.20.1/go.mod h1:NU06lETsFm8fUC6ZjhgDpVBcGZTFQ6XM+LZWZxMI4ac=
 github.com/aws/aws-sdk-go-v2/config v1.18.33 h1:JKcw5SFxFW/rpM4mOPjv0VQ11E2kxW13F3exWOy7VZU=
@@ -39,6 +41,12 @@ github.com/cucumber/messages-go/v16 v16.0.1/go.mod h1:EJcyR5Mm5ZuDsKJnT2N9KRnBK3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dubbikins/envy v0.0.0-20230408131928-e0b8a1e467b5 h1:eujbMrnUR4hn7eFXvG1ayVS0kWkPtjddh0uml20pFjU=
+github.com/dubbikins/envy v0.0.0-20230408131928-e0b8a1e467b5/go.mod h1:ZGctqJt/EKjvv03wmRFgez3vOLZtvSliq2i8UmRTCYg=
+github.com/dubbikins/envy v0.0.1 h1:XTiwWLxryMsDdEq9VQoMhjgrStIZyHDD0RKuWgpnXOk=
+github.com/dubbikins/envy v0.0.1/go.mod h1:aLceGVJN0W5kSnUiwMXUvNI6KobK8hhHhPJXmeR+z7I=
+github.com/dubbikins/envy v0.0.2 h1:3zrKFxLs49SjtJf5UmYObYeuK0XXX4ZRslnBdrCnJj0=
+github.com/dubbikins/envy v0.0.2/go.mod h1:aLceGVJN0W5kSnUiwMXUvNI6KobK8hhHhPJXmeR+z7I=
 github.com/gofrs/uuid v4.0.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/gofrs/uuid v4.2.0+incompatible h1:yyYWMnhkhrKwwr8gAOcOCYxOOscHgDS9yZgBrnJfGa0=
 github.com/gofrs/uuid v4.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=

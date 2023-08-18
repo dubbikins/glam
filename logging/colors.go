@@ -3,10 +3,13 @@ package logging
 import (
 	"fmt"
 )
+
 var reset = "\033[0m"
 
-
-func color( str, color string) string {
+func color(str, color string) string {
+	if !logConfig.WithColor {
+		return str
+	}
 	return fmt.Sprintf("%s%s%s", color, str, reset)
 }
 func Red(str string) string {
@@ -36,9 +39,3 @@ func Magenta(str string) string {
 func White(str string) string {
 	return color(str, "\033[1;97m")
 }
-
-
-
-
-
-
