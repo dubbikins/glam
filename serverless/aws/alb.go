@@ -6,6 +6,51 @@ import (
 	"strings"
 )
 
+type FunctionURLRequest struct {
+	Version               string            `json:"version"`
+	RouteKey              string            `json:"routeKey"`
+	RawPath               string            `json:"rawPath"`
+	RawQueryString        string            `json:"rawQueryString"`
+	Cookies               []string          `json:"cookies"`
+	Headers               map[string]string `json:"headers"`
+	QueryStringParameters map[string]string `json:"queryStringParameters"`
+	RequestContext        RequestContext    `json:"requestContext"`
+	Body                  string            `json:"body"`
+	IsBase64Encoded       bool              `json:"isBase64Encoded"`
+}
+type RequestContext struct {
+	AccountId string `json:"accountId"`
+	ApiId     string `json:"apiId"`
+	// Authentication interface{} `json:"authentication"`
+	Authorizer   *Authorizer `json:"authorizer"`
+	DomainName   string      `json:"domainName"`
+	DomainPrefix string      `json:"domainPrefix"`
+	Http         *HTTP       `json:"http"`
+	RequestId    string      `json:"requestId"`
+	RouteKey     string      `json:"routeKey"`
+	Stage        string      `json:"stage"`
+	Time         string      `json:"time"`
+	TimeEpoch    int         `json:"timeEpoch"`
+}
+type HTTP struct {
+	Method    string `json:"method"`
+	Path      string `json:"path"`
+	Protocol  string `json:"protocol"`
+	SourceIp  string `json:"sourceIp"`
+	UserAgent string `json:"userAgent"`
+}
+type Authorizer struct {
+	IAM IAM `json:"iam"`
+}
+
+type IAM struct {
+	AccessKey string `json:"accessKey"`
+	AccountId string `json:"accountId"`
+	CallerId  string `json:"callerId"`
+	UserArn   string `json:"userArn"`
+	UserId    string `json:"userId"`
+}
+
 type ALBTargetGroupRequest struct {
 	HTTPMethod                      string                       `json:"httpMethod"`
 	Path                            string                       `json:"path"`
